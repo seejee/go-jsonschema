@@ -8,6 +8,22 @@
     },
     "someOtherExternalThing": {
       "$ref": "./ref.json#/Definitions/Thing"
+    },
+    "someExternalProperty": {
+      "$ref": "./primitives.json#/properties/myString"
+    },
+    "someExternalInt": {
+      "$ref": "./primitives.json#/properties/myInteger"
+    },
+    "anotherExternalInt": {
+      "$ref": "./primitives.json#/properties/myInteger"
+    },
+    "externalMap": {
+      "$ref": "./primitives.json#/properties/myMap"
+    },
+    "externalArray": {
+      "$ref": "./primitives.json#/properties/myArray"
     }
-  }
+  },
+  "required": ["someExternalInt"]
 }

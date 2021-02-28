@@ -2,6 +2,52 @@
 
 package test
 
+import "fmt"
+import "encoding/json"
+
+type Primitives struct {
+	// MyArray corresponds to the JSON schema field "myArray".
+	MyArray []string `json:"myArray,omitempty"`
+
+	// MyBoolean corresponds to the JSON schema field "myBoolean".
+	MyBoolean *bool `json:"myBoolean,omitempty"`
+
+	// MyInteger corresponds to the JSON schema field "myInteger".
+	MyInteger *int `json:"myInteger,omitempty"`
+
+	// MyMap corresponds to the JSON schema field "myMap".
+	MyMap PrimitivesMyMap `json:"myMap,omitempty"`
+
+	// MyNull corresponds to the JSON schema field "myNull".
+	MyNull interface{} `json:"myNull,omitempty"`
+
+	// MyNumber corresponds to the JSON schema field "myNumber".
+	MyNumber *float64 `json:"myNumber,omitempty"`
+
+	// MyString corresponds to the JSON schema field "myString".
+	MyString *string `json:"myString,omitempty"`
+}
+
+type PrimitivesMyMap map[string]interface{}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *Primitives) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	type Plain Primitives
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	if plain.MyNull != nil {
+		return fmt.Errorf("field %s: must be null", "myNull")
+	}
+	*j = Primitives(plain)
+	return nil
+}
+
 type Ref struct {
 	// MyThing corresponds to the JSON schema field "myThing".
 	MyThing *Thing `json:"myThing,omitempty"`
@@ -11,15 +57,59 @@ type Ref struct {
 }
 
 type RefExternalFile struct {
+	// AnotherExternalInt corresponds to the JSON schema field "anotherExternalInt".
+	AnotherExternalInt *RefExternalFileAnotherExternalInt `json:"anotherExternalInt,omitempty"`
+
+	// ExternalArray corresponds to the JSON schema field "externalArray".
+	ExternalArray RefExternalFileExternalArray `json:"externalArray,omitempty"`
+
+	// ExternalMap corresponds to the JSON schema field "externalMap".
+	ExternalMap *RefExternalFileExternalMap `json:"externalMap,omitempty"`
+
 	// MyExternalThing corresponds to the JSON schema field "myExternalThing".
 	MyExternalThing *Thing `json:"myExternalThing,omitempty"`
+
+	// SomeExternalInt corresponds to the JSON schema field "someExternalInt".
+	SomeExternalInt RefExternalFileSomeExternalInt `json:"someExternalInt"`
+
+	// SomeExternalProperty corresponds to the JSON schema field
+	// "someExternalProperty".
+	SomeExternalProperty *RefExternalFileSomeExternalProperty `json:"someExternalProperty,omitempty"`
 
 	// SomeOtherExternalThing corresponds to the JSON schema field
 	// "someOtherExternalThing".
 	SomeOtherExternalThing *Thing `json:"someOtherExternalThing,omitempty"`
 }
 
+type RefExternalFileAnotherExternalInt int
+
+type RefExternalFileExternalArray []string
+
+type RefExternalFileExternalMap map[string]interface{}
+
+type RefExternalFileSomeExternalInt int
+
+type RefExternalFileSomeExternalProperty string
+
 type Thing struct {
 	// Name corresponds to the JSON schema field "name".
 	Name *string `json:"name,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *RefExternalFile) UnmarshalJSON(b []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(b, &raw); err != nil {
+		return err
+	}
+	if v, ok := raw["someExternalInt"]; !ok || v == nil {
+		return fmt.Errorf("field someExternalInt: required")
+	}
+	type Plain RefExternalFile
+	var plain Plain
+	if err := json.Unmarshal(b, &plain); err != nil {
+		return err
+	}
+	*j = RefExternalFile(plain)
+	return nil
 }

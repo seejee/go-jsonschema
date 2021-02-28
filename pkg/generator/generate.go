@@ -280,15 +280,25 @@ func (g *schemaGenerator) generateRootType() error {
 }
 
 func (g *schemaGenerator) generateReferencedType(ref string) (codegen.Type, error) {
-	var fileName, scope, defName string
+	var fileName, scope, defName, propertyRefName string
 	if i := strings.IndexRune(ref, '#'); i == -1 {
 		fileName = ref
 	} else {
 		fileName, scope = ref[0:i], ref[i+1:]
-		if !strings.HasPrefix(strings.ToLower(scope), "/definitions/") {
+		hasDefRef := strings.HasPrefix(strings.ToLower(scope), "/definitions/")
+		hasPropertyRef := strings.HasPrefix(strings.ToLower(scope), "/properties/")
+
+		if !hasDefRef && !hasPropertyRef {
 			return nil, fmt.Errorf("unsupported $ref format; must point to definition within file: %q", ref)
 		}
-		defName = scope[13:]
+
+		if hasDefRef {
+			defName = scope[13:]
+		}
+
+		if hasPropertyRef {
+			propertyRefName = scope[12:]
+		}
 	}
 
 	var schema *schemas.Schema
@@ -319,6 +329,36 @@ func (g *schemaGenerator) generateReferencedType(ref string) (codegen.Type, erro
 			return &codegen.EmptyInterfaceType{}, nil
 		}
 		defName = g.identifierize(defName)
+	} else if propertyRefName != "" {
+		var ok bool
+		def, ok = schema.Properties[propertyRefName]
+		if !ok {
+			return nil, fmt.Errorf("property %q (from ref %q) does not exist in schema", propertyRefName, ref)
+		}
+
+		if len(def.Type) > 1 {
+			return nil, fmt.Errorf("property ref %q (from ref %q) cannot be used because it has more than possible type.", propertyRefName, ref)
+		}
+
+		t := def.Type[0]
+
+		switch t {
+		case schemas.TypeNameArray:
+			if def.Items == nil {
+				return nil, errors.New("array property must have 'items' set to a type")
+			}
+			if len(def.Items.Type) > 1 {
+				return nil, errors.New("array property can only have one type")
+			}
+			primitive, err := codegen.PrimitiveTypeFromJSONSchemaType(def.Items.Type[0])
+			return codegen.ArrayType{Type: primitive}, err
+		case schemas.TypeNameObject:
+			return codegen.PrimitiveType{"map[string]interface{}"}, nil
+		case schemas.TypeNameNull:
+			return codegen.EmptyInterfaceType{}, nil
+		default:
+			return codegen.PrimitiveTypeFromJSONSchemaType(t)
+		}
 	} else {
 		def = schema.Type
 		defName = g.getRootTypeName(schema, fileName)

@@ -17,6 +17,16 @@
     },
     "myNull": {
       "type": "null"
+    },
+    "myMap": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "myArray": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   }
 }

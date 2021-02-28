@@ -6,11 +6,17 @@ import "fmt"
 import "encoding/json"
 
 type Primitives struct {
+	// MyArray corresponds to the JSON schema field "myArray".
+	MyArray []string `json:"myArray,omitempty"`
+
 	// MyBoolean corresponds to the JSON schema field "myBoolean".
 	MyBoolean *bool `json:"myBoolean,omitempty"`
 
 	// MyInteger corresponds to the JSON schema field "myInteger".
 	MyInteger *int `json:"myInteger,omitempty"`
+
+	// MyMap corresponds to the JSON schema field "myMap".
+	MyMap PrimitivesMyMap `json:"myMap,omitempty"`
 
 	// MyNull corresponds to the JSON schema field "myNull".
 	MyNull interface{} `json:"myNull,omitempty"`
@@ -21,6 +27,8 @@ type Primitives struct {
 	// MyString corresponds to the JSON schema field "myString".
 	MyString *string `json:"myString,omitempty"`
 }
+
+type PrimitivesMyMap map[string]interface{}
 
 // UnmarshalJSON implements json.Unmarshaler.
 func (j *Primitives) UnmarshalJSON(b []byte) error {
